@@ -429,3 +429,69 @@ def test_offer_detail_returns_doku_fields(api_client, business_user, other_busin
     assert len(response.data["details"]) == 3
     assert "id" in response.data["details"][0]
     assert "url" in response.data["details"][0]    
+
+@pytest.mark.django_db
+def test_delete_requires_auth(api_client, business_user):
+    offer = Offer.objects.create(
+        user=business_user,
+        title="To Delete",
+        description="Test"
+    )
+
+    response = api_client.delete(f"/api/offers/{offer.id}/")
+    assert response.status_code == 401
+
+
+@pytest.mark.django_db
+def test_delete_returns_404_for_invalid_id(api_client, business_user):
+    api_client.force_authenticate(user=business_user)
+
+    response = api_client.delete("/api/offers/999999/")
+    assert response.status_code == 404
+
+@pytest.mark.django_db
+def test_offerdetail_requires_auth(api_client, business_user):
+    offer = Offer.objects.create(user=business_user, title="Offer", description="Test")
+    detail = OfferDetail.objects.create(
+        offer=offer,
+        title="Basic",
+        revisions=1,
+        delivery_time_in_days=5,
+        price=100,
+        features=["Logo"],
+        offer_type="basic"
+    )
+
+    response = api_client.get(f"/api/offerdetails/{detail.id}/")
+    assert response.status_code == 401
+
+
+@pytest.mark.django_db
+def test_offerdetail_returns_exact_fields(api_client, business_user):
+    api_client.force_authenticate(user=business_user)
+
+    offer = Offer.objects.create(user=business_user, title="Offer", description="Test")
+    detail = OfferDetail.objects.create(
+        offer=offer,
+        title="Basic",
+        revisions=1,
+        delivery_time_in_days=5,
+        price=100,
+        features=["Logo"],
+        offer_type="basic"
+    )
+
+    response = api_client.get(f"/api/offerdetails/{detail.id}/")
+    assert response.status_code == 200
+
+    expected_keys = {
+        "id",
+        "title",
+        "revisions",
+        "delivery_time_in_days",
+        "price",
+        "features",
+        "offer_type",
+    }
+
+    assert set(response.data.keys()) == expected_keys

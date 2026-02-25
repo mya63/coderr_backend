@@ -5,12 +5,17 @@ from offers_app.models import Offer, OfferDetail
 
 
 class OfferDetailSerializer(serializers.ModelSerializer):
-    offer = serializers.PrimaryKeyRelatedField(read_only=True)  # MYA: offer wird serverseitig gesetzt
-
     class Meta:
         model = OfferDetail
-        fields = "__all__"
-
+        fields = [
+            "id",
+            "title",
+            "revisions",
+            "delivery_time_in_days",
+            "price",
+            "features",
+            "offer_type",
+        ]
 
 # MYA: Nur für GET-Listenansicht: Details als {id, url}
 class OfferDetailLinkSerializer(serializers.ModelSerializer):
