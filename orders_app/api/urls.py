@@ -1,3 +1,18 @@
 from django.urls import path
+from orders_app.api.views import (
+    OrderListCreateView,
+    OrderPatchDeleteView,
+    OrderCountView,
+    CompletedOrderCountView,
+)
 
-urlpatterns = []
+urlpatterns = [
+    path("orders/", OrderListCreateView.as_view(), name="orders-list-create"),
+    path("orders/<int:pk>/", OrderPatchDeleteView.as_view(), name="orders-patch-delete"),
+    path("order-count/<int:business_user_id>/", OrderCountView.as_view(), name="order-count"),
+    path(
+        "completed-order-count/<int:business_user_id>/",
+        CompletedOrderCountView.as_view(),
+        name="completed-order-count",
+    ),
+]
