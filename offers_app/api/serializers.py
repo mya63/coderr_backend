@@ -73,6 +73,36 @@ class OfferReadSerializer(serializers.ModelSerializer):
             "last_name": obj.user.last_name,
             "username": obj.user.username,
         }
+    
+    # MYA: Doku Serializer für GET /api/offers/{id}/ (OHNE user_details)
+class OfferRetrieveSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(read_only=True)
+    details = OfferDetailLinkSerializer(many=True, read_only=True)
+    min_price = serializers.SerializerMethodField()
+    min_delivery_time = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Offer
+        fields = [
+            "id",
+            "user",
+            "title",
+            "image",
+            "description",
+            "created_at",
+            "updated_at",
+            "details",
+            "min_price",
+            "min_delivery_time",
+        ]
+
+    def get_min_price(self, obj):
+        prices = obj.details.values_list("price", flat=True)
+        return min(prices) if prices else None
+
+    def get_min_delivery_time(self, obj):
+        days = obj.details.values_list("delivery_time_in_days", flat=True)
+        return min(days) if days else None
 
 
 # MYA: WRITE Serializer (POST/PATCH): akzeptiert volle Details
@@ -83,6 +113,20 @@ class OfferWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Offer
         fields = "__all__"
+
+            # MYA: Doku -> Ein Offer muss genau 3 Details enthalten
+    def validate(self, attrs):
+        request = self.context.get("request")
+
+    # Nur bei CREATE (POST) genau 3 Details erzwingen
+        if request and request.method == "POST":
+            details = attrs.get("details", [])
+            if len(details) != 3:
+                raise serializers.ValidationError(
+                {"details": "Ein Offer muss genau 3 Details enthalten."}
+            )
+
+        return attrs
 
     def create(self, validated_data):
         details_data = validated_data.pop("details", [])

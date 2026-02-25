@@ -64,10 +64,26 @@ def test_business_can_create_offer(api_client, business_user):
                 "price": 100,
                 "features": ["Logo"],
                 "offer_type": "basic",
-            }
+            },
+            {
+                "title": "Standard",
+                "revisions": 5,
+                "delivery_time_in_days": 7,
+                "price": 200,
+                "features": ["Logo", "Visitenkarte"],
+                "offer_type": "standard",
+            },
+            {
+                "title": "Premium",
+                "revisions": 10,
+                "delivery_time_in_days": 10,
+                "price": 500,
+                "features": ["Logo", "Visitenkarte", "Flyer"],
+                "offer_type": "premium",
+            },
         ],
     }
-
+    
     response = api_client.post("/api/offers/", data, format="json")
     assert response.status_code == 201, response.data
     assert Offer.objects.count() == 1
@@ -371,3 +387,45 @@ def test_get_offers_page_size(api_client, business_user):
     response = api_client.get("/api/offers/?page_size=2")
     assert response.status_code == 200
     assert len(response.data["results"]) <= 2
+
+@pytest.mark.django_db
+def test_offer_detail_requires_auth(api_client, business_user):
+    offer = Offer.objects.create(user=business_user, title="Offer", description="Test")
+    response = api_client.get(f"/api/offers/{offer.id}/")
+    assert response.status_code == 401
+
+
+@pytest.mark.django_db
+def test_offer_detail_returns_doku_fields(api_client, business_user, other_business_user):
+    # Owner erstellt Offer + 3 Details (Doku)
+    offer = Offer.objects.create(user=business_user, title="Offer", description="Test")
+
+    OfferDetail.objects.create(
+        offer=offer, title="Basic", revisions=1, delivery_time_in_days=5,
+        price=100, features=["Logo"], offer_type="basic"
+    )
+    OfferDetail.objects.create(
+        offer=offer, title="Standard", revisions=2, delivery_time_in_days=7,
+        price=200, features=["Logo"], offer_type="standard"
+    )
+    OfferDetail.objects.create(
+        offer=offer, title="Premium", revisions=3, delivery_time_in_days=10,
+        price=500, features=["Logo"], offer_type="premium"
+    )
+
+    # anderer eingeloggter User darf GET laut Doku
+    api_client.force_authenticate(user=other_business_user)
+    response = api_client.get(f"/api/offers/{offer.id}/")
+    assert response.status_code == 200
+
+    # exakt Doku keys (kein user_details!)
+    expected_keys = {
+        "id", "user", "title", "image", "description", "created_at", "updated_at",
+        "details", "min_price", "min_delivery_time"
+    }
+    assert set(response.data.keys()) == expected_keys
+
+    assert isinstance(response.data["details"], list)
+    assert len(response.data["details"]) == 3
+    assert "id" in response.data["details"][0]
+    assert "url" in response.data["details"][0]    

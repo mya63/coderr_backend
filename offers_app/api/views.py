@@ -7,7 +7,8 @@ from django.db.models import Min  # MYA
 
 from offers_app.models import Offer, OfferDetail
 from .serializers import (
-    OfferReadSerializer,      # MYA
+    OfferReadSerializer,
+    OfferRetrieveSerializer,            # MYA
     OfferWriteSerializer,     # MYA
     OfferDetailSerializer
 )
@@ -69,17 +70,21 @@ class OfferListCreateView(generics.ListCreateAPIView):
 # GET/PATCH/DELETE /api/offers/{id}/
 class OfferDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Offer.objects.all()
-    permission_classes = [permissions.IsAuthenticated, IsOwner]
 
-    # MYA: GET => Read Serializer, PATCH/PUT => Write Serializer
+    # MYA: Doku -> GET nur Auth erforderlich, PATCH/DELETE nur Owner
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [permissions.IsAuthenticated()]
+        return [permissions.IsAuthenticated(), IsOwner()]
+
+    # MYA: Doku -> GET /api/offers/{id}/ ohne user_details
     def get_serializer_class(self):
         if self.request.method == "GET":
-            return OfferReadSerializer
+            return OfferRetrieveSerializer
         return OfferWriteSerializer
 
     def get_serializer_context(self):
         return {"request": self.request}
-
 
 # GET /api/offerdetails/{id}/
 class OfferDetailSingleView(generics.RetrieveAPIView):
