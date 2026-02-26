@@ -12,4 +12,7 @@ urlpatterns = [
     path("api/", include("reviews_app.api.urls")),
     path("api-auth/", include("rest_framework.urls")),
     path("api/", include("orders_app.api.urls")),
+    path("api/", include("reviews_app.api.urls")),
+    path("api/", include("core.api.urls")),
+
 ]
