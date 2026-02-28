@@ -60,6 +60,29 @@ Body:
 
 ---
 
+
+If the demo users (kevin / andrey) are not available 
+(e.g. after a Render restart), they can be recreated via:
+
+POST https://coderr-backend-1ons.onrender.com/api/registration/
+
+Example:
+
+{
+  "username": "kevin",
+  "password": "asdasd24",
+  "type": "business"
+}
+
+or
+
+{
+  "username": "andrey",
+  "password": "asdasd12",
+  "type": "customer"
+}
+
+
 ## ⚙️ Tech Stack
 
 - Python
@@ -77,7 +100,7 @@ Body:
 Clone the repository:
 
 ```bash
-git clone <your-repo-url>
+git clone <https://github.com/mya63/coderr_backend.git>
 cd coderr_backend
 
 
