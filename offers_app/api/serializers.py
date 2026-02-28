@@ -117,7 +117,16 @@ class OfferWriteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Offer
-        fields = "__all__"
+        fields = [
+    "id",
+    "user",
+    "title",
+    "description",
+    "image",
+    "created_at",
+    "updated_at",
+    "details",
+]
 
             # MYA: Doku -> Ein Offer muss genau 3 Details enthalten
     def validate(self, attrs):

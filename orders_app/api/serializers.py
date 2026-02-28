@@ -1,8 +1,9 @@
-from django.contrib.auth.models import User
 from rest_framework import serializers
 
 from orders_app.models import Order
 from offers_app.models import OfferDetail
+from django.db import IntegrityError
+
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -44,28 +45,49 @@ class OrderCreateSerializer(serializers.Serializer):
         business_user = offer.user
         customer_user = request.user
 
-        # Read fields robustly (in case OfferDetail differs slightly)
-        revisions = getattr(offer_detail, "revisions", 0)
-        delivery_time_in_days = getattr(offer_detail, "delivery_time_in_days", 0)
-        price = getattr(offer_detail, "price", 0)
+        # ✅ normalize / coerce types (prevents DB constraint 500)
+        raw_revisions = getattr(offer_detail, "revisions", 0)
+        try:
+            revisions = int(raw_revisions) if raw_revisions is not None else 0
+        except (TypeError, ValueError):
+            revisions = 0
+        if revisions < 0:
+            revisions = 0
+
+        raw_delivery = getattr(offer_detail, "delivery_time_in_days", 0)
+        try:
+            delivery_time_in_days = int(raw_delivery) if raw_delivery is not None else 0
+        except (TypeError, ValueError):
+            delivery_time_in_days = 0
+        if delivery_time_in_days < 0:
+            delivery_time_in_days = 0
+
+        raw_price = getattr(offer_detail, "price", 0)
+        # price kann float/decimal/string sein → DecimalField kann das meist,
+        # aber None sollte nie durchrutschen
+        price = 0 if raw_price is None else raw_price
+
         features = getattr(offer_detail, "features", []) or []
-        offer_type = getattr(offer_detail, "offer_type", "basic")
-        title = getattr(offer, "title", "")
+        offer_type = getattr(offer_detail, "offer_type", "basic") or "basic"
+        title = getattr(offer, "title", "") or ""
 
-        order = Order.objects.create(
-            customer_user=customer_user,
-            business_user=business_user,
-            offer_detail=offer_detail,
-            title=title,
-            revisions=revisions,
-            delivery_time_in_days=delivery_time_in_days,
-            price=price,
-            features=features,
-            offer_type=offer_type,
-            status=Order.STATUS_IN_PROGRESS,
-        )
+        try:
+            order = Order.objects.create(
+                customer_user=customer_user,
+                business_user=business_user,
+                offer_detail=offer_detail,
+                title=title,
+                revisions=revisions,
+                delivery_time_in_days=delivery_time_in_days,
+                price=price,
+                features=features,
+                offer_type=offer_type,
+                status=Order.STATUS_IN_PROGRESS,
+            )
+        except IntegrityError:
+            raise serializers.ValidationError({"detail": "Invalid order data."})
+
         return order
-
 
 class OrderStatusUpdateSerializer(serializers.ModelSerializer):
     class Meta:
