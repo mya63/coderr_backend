@@ -45,6 +45,8 @@ class OrderCreateSerializer(serializers.Serializer):
         business_user = offer.user
         customer_user = request.user
 
+        title = offer.title
+
         # ✅ normalize / coerce types (prevents DB constraint 500)
         raw_revisions = getattr(offer_detail, "revisions", 0)
         try:
@@ -69,7 +71,7 @@ class OrderCreateSerializer(serializers.Serializer):
 
         features = getattr(offer_detail, "features", []) or []
         offer_type = getattr(offer_detail, "offer_type", "basic") or "basic"
-        title = getattr(offer, "title", "") or ""
+        title = getattr(offer, "title", "") or ""  # MYA: Snapshot Titel muss vom OfferDetail kommen
 
         try:
             order = Order.objects.create(

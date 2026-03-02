@@ -2,6 +2,8 @@ from django.contrib.auth.models import User
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
+from django.db.models import Q  
+
 
 from orders_app.models import Order
 from orders_app.api.permissions import IsCustomerUser, IsBusinessUser
@@ -17,7 +19,7 @@ class OrderListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        return Order.objects.filter(customer_user=user) | Order.objects.filter(business_user=user)
+        return Order.objects.filter(Q(customer_user=user) | Q(business_user=user)).distinct()
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -52,10 +54,15 @@ class OrderPatchDeleteView(generics.GenericAPIView):
         # Owner check: business user can only update own orders
         if order.business_user != request.user:
             return Response({"detail": "Not allowed."}, status=status.HTTP_403_FORBIDDEN)
+        
+        # MYA: Doku/Test: status muss bei PATCH mitgeschickt werden, sonst 400
+        if "status" not in request.data:
+            return Response({"status": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = OrderStatusUpdateSerializer(order, data=request.data, partial=True)
+        serializer = OrderStatusUpdateSerializer(order, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        order.refresh_from_db()  # MYA
         return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
 
     def delete(self, request, *args, **kwargs):
