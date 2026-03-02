@@ -13,6 +13,7 @@ from .serializers import (
     OfferDetailSerializer
 )
 from .permissions import IsBusinessUser, IsOwner
+from .filters import OfferFilter  # MYA
 
 
 # MYA: Pagination wie Doku (PageNumberPagination + page_size Query)
@@ -24,53 +25,43 @@ class OfferPagination(PageNumberPagination):
 
 # GET /api/offers/  +  POST /api/offers/
 class OfferListCreateView(generics.ListCreateAPIView):
-    queryset = Offer.objects.all().order_by("-updated_at")
     pagination_class = OfferPagination
 
-    # MYA: Filter/Search/Ordering laut Doku
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = OfferFilter  # MYA
     search_fields = ["title", "description"]
-    ordering_fields = ["updated_at", "min_price"]  # MYA: min_price ordering machen wir später sauber per Annotation
+    ordering_fields = ["updated_at", "min_price"]
     ordering = ["-updated_at"]
 
     def get_permissions(self):
-        # MYA: Doku -> LIST ist public
         if self.request.method == "GET":
             return [permissions.AllowAny()]
-
-        # MYA: POST bleibt nur Business
         if self.request.method == "POST":
             return [permissions.IsAuthenticated(), IsBusinessUser()]
-
         return [permissions.IsAuthenticated()]
 
-    # MYA: GET => Read Serializer, POST => Write Serializer
     def get_serializer_class(self):
         if self.request.method == "GET":
             return OfferReadSerializer
         return OfferWriteSerializer
 
-    # MYA: creator_id Query Param
     def get_queryset(self):
-        qs = Offer.objects.all().annotate(
-            min_price=Min("details__price"),  # MYA
-            min_delivery_time=Min("details__delivery_time_in_days"),  # MYA (optional aber passend zur Doku)
-    )
-
-        creator_id = self.request.query_params.get("creator_id")
-        if creator_id:
-            qs = qs.filter(user_id=creator_id)
-
-        return qs.order_by("-updated_at")
+        # MYA: immer annotieren, damit Filter + ordering funktionieren
+        return Offer.objects.all().annotate(
+            min_price=Min("details__price"),
+            min_delivery_time=Min("details__delivery_time_in_days"),
+        ).order_by("-updated_at")
 
     def get_serializer_context(self):
         return {"request": self.request}
 
-
 # GET/PATCH/DELETE /api/offers/{id}/
 class OfferDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Offer.objects.all()
-
+    queryset = Offer.objects.all().annotate(
+        min_price=Min("details__price"),  # MYA
+        min_delivery_time=Min("details__delivery_time_in_days"),  # MYA
+    )
+    
     # MYA: Doku -> GET nur Auth erforderlich, PATCH/DELETE nur Owner
     def get_permissions(self):
         if self.request.method == "GET":

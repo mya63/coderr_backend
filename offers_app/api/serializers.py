@@ -2,6 +2,7 @@ from django.contrib.auth.models import User  # MYA
 from rest_framework import serializers
 from rest_framework.reverse import reverse  # MYA
 from offers_app.models import Offer, OfferDetail
+from rest_framework.exceptions import ValidationError  # MYA
 
 
 class OfferDetailSerializer(serializers.ModelSerializer):
@@ -63,12 +64,10 @@ class OfferReadSerializer(serializers.ModelSerializer):
         ]
 
     def get_min_price(self, obj):
-        prices = obj.details.values_list("price", flat=True)
-        return min(prices) if prices else None
+        return getattr(obj, "min_price", None)
 
     def get_min_delivery_time(self, obj):
-        days = obj.details.values_list("delivery_time_in_days", flat=True)
-        return min(days) if days else None
+        return getattr(obj, "min_delivery_time", None)
 
     def get_user_details(self, obj):
         if not obj.user:
@@ -165,12 +164,18 @@ class OfferWriteSerializer(serializers.ModelSerializer):
 
         if details_data is not None:
             for detail_data in details_data:
-                detail_id = detail_data.get("id", None)
-                if detail_id:
+                detail_id = detail_data.get("id")
+                if not detail_id:
+                    raise ValidationError({"details": "Jedes Detail braucht eine id beim Update."})  # MYA
+
+                try:
                     detail_obj = OfferDetail.objects.get(id=detail_id, offer=instance)
-                    for attr, value in detail_data.items():
-                        if attr != "id":
-                            setattr(detail_obj, attr, value)
-                    detail_obj.save()
+                except OfferDetail.DoesNotExist:
+                    raise ValidationError({"details": f"Detail id={detail_id} gehört nicht zu diesem Offer."})  # MYA
+
+                for attr, value in detail_data.items():
+                    if attr != "id":
+                        setattr(detail_obj, attr, value)
+                detail_obj.save()
 
         return instance
