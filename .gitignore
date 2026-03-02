@@ -20,3 +20,7 @@ htmlcov/
 
 # Environment
 .env
+
+# Static files (collectstatic)
+staticfiles/
+

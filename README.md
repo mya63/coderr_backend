@@ -17,8 +17,6 @@ It includes:
 
 Backend is deployed on Render:
 
-Base URL:
-https://coderr-backend-1ons.onrender.com/api/
 
 Example endpoint:
 https://coderr-backend-1ons.onrender.com/api/base-info/
