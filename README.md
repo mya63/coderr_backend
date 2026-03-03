@@ -1,70 +1,81 @@
 # Coderr Backend API
 
-This project is a Django REST Framework backend for a marketplace platform.
-
-It includes:
-
-- Authentication (Registration + Login)
-- User Profiles (Customer / Business roles)
-- Offers with multiple OfferDetails
-- Orders with status workflow
-- Reviews with rating system
-- Aggregated base information endpoint
+Django REST Framework backend for a marketplace platform (Developer Akademie project).
 
 ---
 
-## 🌍 Live Deployment
+## 🌍 Live Deployment (Render)
 
-Backend is deployed on Render:
+Base URL:
+
+
+https://coderr-backend-1ons.onrender.com/api/
 
 
 Example endpoint:
-https://coderr-backend-1ons.onrender.com/api/base-info/
+
+
+GET https://coderr-backend-1ons.onrender.com/api/base-info/
+
 
 ---
 
 ## 🔐 Demo Login Credentials
 
-Business User:
-username: kevin  
-password: asdasd24  
+### Business User
 
-Customer User:
-username: andrey  
-password: asdasd12  
+username: kevin
+password: asdasd24
+
+
+### Customer User
+
+username: andrey
+password: asdasd12
+
 
 Login endpoint:
+
+
 POST /api/login/
 
----
-
-## 🧪 How to Test
-
-You can test the API in multiple ways:
-
-1. Use the Django REST Framework browsable API in the browser
-2. Use Postman / Insomnia
-3. Connect a frontend application
 
 Example login request:
 
+
 POST https://coderr-backend-1ons.onrender.com/api/login/
 
-Body:
+
+Request Body:
+
+```json
 {
   "username": "kevin",
   "password": "asdasd24"
 }
+🧪 How to Test
 
----
+You can test the API using:
 
+Django REST Framework browsable API
 
-If the demo users (kevin / andrey) are not available 
-(e.g. after a Render restart), they can be recreated via:
+Postman / Insomnia
+
+A frontend application
+
+Run tests locally:
+
+pytest --cov
+
+Test coverage is above 95%.
+
+🔄 Recreate Demo Users (if needed)
+
+If demo users are missing (e.g. after Render restart):
 
 POST https://coderr-backend-1ons.onrender.com/api/registration/
 
-Example:
+Business example:
 
 {
   "username": "kevin",
@@ -72,41 +83,53 @@ Example:
   "type": "business"
 }
 
-or
+Customer example:
 
 {
   "username": "andrey",
   "password": "asdasd12",
   "type": "customer"
 }
+⚙️ Tech Stack
 
+Python
 
-## ⚙️ Tech Stack
+Django
 
-- Python
-- Django
-- Django REST Framework
-- django-filter
-- pytest
-- pytest-django
-- pytest-cov
+Django REST Framework
 
----
+django-filter
 
-## 🛠 Installation (Local Development)
+pytest
 
-Clone the repository:
+pytest-django
 
-```bash
-git clone <https://github.com/mya63/coderr_backend.git>
+pytest-cov
+
+Gunicorn
+
+WhiteNoise
+
+🛠 Local Installation
+
+Clone repository:
+
+git clone https://github.com/mya63/coderr_backend.git
 cd coderr_backend
 
-
-Create and activate virtual environment:
+Create virtual environment:
 
 python -m venv venv
-source venv/bin/activate   # Linux / Mac
-venv\Scripts\activate      # Windows
+
+Activate environment:
+
+Windows:
+
+venv\Scripts\activate
+
+Mac / Linux:
+
+source venv/bin/activate
 
 Install dependencies:
 
@@ -116,14 +139,13 @@ Run migrations:
 
 python manage.py migrate
 
-Start development server:
+Start server:
 
 python manage.py runserver
-✅ Run Tests
-pytest --cov
 
-Test coverage is above 95%.
+Backend will run at:
 
+http://127.0.0.1:8000/api/
 📁 Project Structure
 
 auth_app
@@ -138,9 +160,16 @@ reviews_app
 
 core (base-info endpoint)
 
-All endpoints are protected with proper permission handling and follow REST principles.
+All endpoints follow REST principles and use proper permission handling.
 
 🗄 Database
 
-The deployed version currently uses SQLite.
+The deployed version uses SQLite.
+
 For production environments, PostgreSQL is recommended.
+
+## 👤 Author
+
+Muhammed Yunus Amini
+GitHub: https://github.com/mya63  
+Developer Akademie – Fullstack Program (2025–2026)
