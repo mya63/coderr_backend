@@ -12,7 +12,7 @@ from orders_app.api.serializers import (
     OrderCreateSerializer,
     OrderStatusUpdateSerializer,
 )
-
+    
 
 class OrderListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -59,9 +59,11 @@ class OrderPatchDeleteView(generics.GenericAPIView):
         if "status" not in request.data:
             return Response({"status": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
 
+        # MYA: kein partial, damit fehlende/ungültige Daten korrekt 400 geben
         serializer = OrderStatusUpdateSerializer(order, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+
         order.refresh_from_db()  # MYA
         return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
 
