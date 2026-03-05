@@ -3,6 +3,9 @@ from django.db import models
 
 
 class Order(models.Model):
+    # MYA: Status-Values exakt wie Doku (mit Leerzeichen)
+    # MYA: Status Werte müssen exakt zu den Tests passen
+
     STATUS_IN_PROGRESS = "in_progress"
     STATUS_COMPLETED = "completed"
     STATUS_CANCELLED = "cancelled"
@@ -24,14 +27,12 @@ class Order(models.Model):
         related_name="business_orders",
     )
 
-    # Keep link to the offer detail used to create the order
     offer_detail = models.ForeignKey(
         "offers_app.OfferDetail",
         on_delete=models.PROTECT,
         related_name="orders",
     )
 
-    # Snapshot fields (so response stays stable even if offer changes later)
     title = models.CharField(max_length=255)
     revisions = models.PositiveIntegerField(default=0)
     delivery_time_in_days = models.PositiveIntegerField(default=0)
