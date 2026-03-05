@@ -1,27 +1,34 @@
-from django.db.models import Avg  # Used for calculating average rating
-from rest_framework.views import APIView  # Base class for custom API views
-from rest_framework.response import Response  # Standard DRF response
-from rest_framework.permissions import AllowAny  # No authentication required
+from django.db.models import Avg
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 
-from reviews_app.models import Review  # Review model
-from profiles_app.models import Profile  # Profile model
-from offers_app.models import Offer  # Offer model
+from reviews_app.models import Review
+from profiles_app.models import Profile
+from offers_app.models import Offer
 
 
 class BaseInfoView(APIView):
-    permission_classes = [AllowAny]  # Public endpoint (no auth required)
+    # Public endpoint – no authentication required
+    permission_classes = [AllowAny]
 
     def get(self, request):
-        review_count = Review.objects.count()  # Total number of reviews
+        # Count total number of reviews
+        review_count = Review.objects.count()
 
-        avg = Review.objects.aggregate(avg=Avg("rating"))["avg"]  # Calculate average rating
-        average_rating = round(float(avg), 1) if avg is not None else 0.0  # Round to 1 decimal
+        # Calculate average rating using aggregation
+        avg = Review.objects.aggregate(avg=Avg("rating"))["avg"]
 
+        # Ensure one decimal place and handle empty case
+        average_rating = round(float(avg), 1) if avg is not None else 0.0
+
+        # Count business profiles only
         business_profile_count = Profile.objects.filter(
             role=Profile.ROLE_BUSINESS
-        ).count()  # Count business profiles
+        ).count()
 
-        offer_count = Offer.objects.count()  # Total number of offers
+        # Count total offers
+        offer_count = Offer.objects.count()
 
         return Response(
             {

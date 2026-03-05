@@ -8,12 +8,14 @@ from reviews_app.api.permissions import IsAuthenticatedCustomerForCreate, IsRevi
 
 class ReviewListCreateView(generics.ListCreateAPIView):
     serializer_class = ReviewSerializer
+
+    # List requires authentication; create additionally requires customer role
     permission_classes = [IsAuthenticated, IsAuthenticatedCustomerForCreate]
 
     def get_queryset(self):
         qs = Review.objects.all()
 
-        # Filter
+        # Optional filters via query params
         business_user_id = self.request.query_params.get("business_user_id")
         reviewer_id = self.request.query_params.get("reviewer_id")
 
@@ -22,7 +24,7 @@ class ReviewListCreateView(generics.ListCreateAPIView):
         if reviewer_id:
             qs = qs.filter(reviewer_id=reviewer_id)
 
-        # Ordering (laut Doku: updated_at oder rating)
+        # Optional ordering via query param (allowed: updated_at, rating)
         ordering = self.request.query_params.get("ordering")
         if ordering == "rating":
             qs = qs.order_by("-rating", "-updated_at")
@@ -32,6 +34,7 @@ class ReviewListCreateView(generics.ListCreateAPIView):
         return qs
 
     def get_serializer_context(self):
+        # Provide request context for serializer (e.g. building URLs)
         ctx = super().get_serializer_context()
         ctx["request"] = self.request
         return ctx
@@ -40,6 +43,8 @@ class ReviewListCreateView(generics.ListCreateAPIView):
 class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
+
+    # Only the review owner can update or delete
     permission_classes = [IsAuthenticated, IsReviewerOwner]
 
     def get_serializer_context(self):
