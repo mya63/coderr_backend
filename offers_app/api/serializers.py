@@ -1,11 +1,12 @@
-from django.contrib.auth.models import User  # MYA
+from django.contrib.auth.models import User   
 from rest_framework import serializers
-from rest_framework.reverse import reverse  # MYA
+from rest_framework.reverse import reverse   
 from offers_app.models import Offer, OfferDetail
-from rest_framework.exceptions import ValidationError  # MYA
 
 
 class OfferDetailSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(required=False)  # allow id in PATCH payload
+
     class Meta:
         model = OfferDetail
         fields = [
@@ -17,35 +18,34 @@ class OfferDetailSerializer(serializers.ModelSerializer):
             "features",
             "offer_type",
         ]
-
-# MYA: Nur für GET-Listenansicht: Details als {id, url}
+# : Nur für GET-Listenansicht: Details als {id, url}
 class OfferDetailLinkSerializer(serializers.ModelSerializer):
-    url = serializers.SerializerMethodField()  # MYA
+    url = serializers.SerializerMethodField()  
 
     class Meta:
         model = OfferDetail
-        fields = ["id", "url"]  # MYA
+        fields = ["id", "url"]  
 
     def get_url(self, obj):
         request = self.context.get("request")
-        # MYA: baut "/api/offerdetails/<id>/" (falls du Names hast, können wir reverse nehmen)
+        # : baut "/api/offerdetails/<id>/" (falls du Names hast, können wir reverse nehmen)
         return request.build_absolute_uri(f"/api/offerdetails/{obj.id}/") if request else f"/api/offerdetails/{obj.id}/"
 
 
-# MYA: User Details laut Doku
+# : User Details laut Doku
 class UserDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["first_name", "last_name", "username"]
 
 
-# MYA: READ Serializer (GET): Doku-Format
+# : READ Serializer (GET): Doku-Format
 class OfferReadSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True)
-    details = OfferDetailLinkSerializer(many=True, read_only=True)  # MYA: Links statt volle Details
-    min_price = serializers.SerializerMethodField()  # MYA
-    min_delivery_time = serializers.SerializerMethodField()  # MYA
-    user_details = serializers.SerializerMethodField()  # MYA
+    details = OfferDetailLinkSerializer(many=True, read_only=True)  # : Links statt volle Details
+    min_price = serializers.SerializerMethodField()  
+    min_delivery_time = serializers.SerializerMethodField()  
+    user_details = serializers.SerializerMethodField()  
 
     class Meta:
         model = Offer
@@ -78,7 +78,7 @@ class OfferReadSerializer(serializers.ModelSerializer):
             "username": obj.user.username,
         }
     
-    # MYA: Doku Serializer für GET /api/offers/{id}/ (OHNE user_details)
+    # : Doku Serializer für GET /api/offers/{id}/ (OHNE user_details)
 class OfferRetrieveSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True)
     details = OfferDetailLinkSerializer(many=True, read_only=True)
@@ -109,7 +109,7 @@ class OfferRetrieveSerializer(serializers.ModelSerializer):
         return min(days) if days else None
 
 
-# MYA: WRITE Serializer (POST/PATCH): akzeptiert volle Details
+# : WRITE Serializer (POST/PATCH): akzeptiert volle Details
 class OfferWriteSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True)
     details = OfferDetailSerializer(many=True)
@@ -127,7 +127,7 @@ class OfferWriteSerializer(serializers.ModelSerializer):
     "details",
 ]
 
-            # MYA: Doku -> Ein Offer muss genau 3 Details enthalten
+            # : Doku -> Ein Offer muss genau 3 Details enthalten
     def validate(self, attrs):
         request = self.context.get("request")
 
@@ -166,12 +166,12 @@ class OfferWriteSerializer(serializers.ModelSerializer):
             for detail_data in details_data:
                 detail_id = detail_data.get("id")
                 if not detail_id:
-                    raise ValidationError({"details": "Jedes Detail braucht eine id beim Update."})  # MYA
+                    raise serializers.ValidationError({"details": "Each detail needs an id for update."})  
 
                 try:
                     detail_obj = OfferDetail.objects.get(id=detail_id, offer=instance)
                 except OfferDetail.DoesNotExist:
-                    raise ValidationError({"details": f"Detail id={detail_id} gehört nicht zu diesem Offer."})  # MYA
+                    raise serializers.ValidationError({"details": f"Detail id={detail_id} does not belong to this offer."})  
 
                 for attr, value in detail_data.items():
                     if attr != "id":
