@@ -1,6 +1,8 @@
+from math import perm
+
 from django.contrib.auth.models import User
 from django.db.models import Q
-from rest_framework import generics, status
+from rest_framework import generics, request, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -52,29 +54,26 @@ class OrderPatchDeleteView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, *args, **kwargs):
-        # Only business users can update order status
+        order = self.get_object()
+
         perm = IsBusinessUser()
         if not perm.has_permission(request, self):
             return Response({"detail": "Not allowed."}, status=status.HTTP_403_FORBIDDEN)
 
-        order = self.get_object()
-
-        # Ensure business user can only update their own orders
         if order.business_user != request.user:
             return Response({"detail": "Not allowed."}, status=status.HTTP_403_FORBIDDEN)
 
-        # Status must be included in PATCH request
         if "status" not in request.data:
-            return Response({"status": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+            {"status": ["This field is required."]},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
-        # Validate and update order status
         serializer = OrderStatusUpdateSerializer(order, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        # Refresh instance to ensure latest DB state
         order.refresh_from_db()
-
         return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
 
     def delete(self, request, *args, **kwargs):
