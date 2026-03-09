@@ -109,39 +109,35 @@ class OfferRetrieveSerializer(serializers.ModelSerializer):
         return min(days) if days else None
 
 
-# : WRITE Serializer (POST/PATCH): akzeptiert volle Details
 class OfferWriteSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(read_only=True)
+    # PATCH/POST must accept full details and return full details with ids
     details = OfferDetailSerializer(many=True)
 
     class Meta:
         model = Offer
         fields = [
-    "id",
-    "user",
-    "title",
-    "description",
-    "image",
-    "created_at",
-    "updated_at",
-    "details",
-]
+            "id",
+            "title",
+            "image",
+            "description",
+            "details",
+        ]
 
-            # : Doku -> Ein Offer muss genau 3 Details enthalten
     def validate(self, attrs):
+        # POST must contain exactly 3 offer details
         request = self.context.get("request")
 
-    # Nur bei CREATE (POST) genau 3 Details erzwingen
         if request and request.method == "POST":
             details = attrs.get("details", [])
             if len(details) != 3:
                 raise serializers.ValidationError(
-                {"details": "Ein Offer muss genau 3 Details enthalten."}
-            )
+                    {"details": "An offer must contain exactly 3 details."}
+                )
 
         return attrs
 
     def create(self, validated_data):
+        # Create offer with nested details
         details_data = validated_data.pop("details", [])
         request = self.context.get("request")
 
@@ -156,6 +152,7 @@ class OfferWriteSerializer(serializers.ModelSerializer):
         return offer
 
     def update(self, instance, validated_data):
+        # PATCH updates details by offer_type, not by detail id
         details_data = validated_data.pop("details", None)
 
         for attr, value in validated_data.items():
@@ -164,18 +161,30 @@ class OfferWriteSerializer(serializers.ModelSerializer):
 
         if details_data is not None:
             for detail_data in details_data:
-                detail_id = detail_data.get("id")
-                if not detail_id:
-                    raise serializers.ValidationError({"details": "Each detail needs an id for update."})  
+                offer_type = detail_data.get("offer_type")
+
+                if not offer_type:
+                    raise serializers.ValidationError(
+                        {"details": "Each detail needs an offer_type."}
+                    )
 
                 try:
-                    detail_obj = OfferDetail.objects.get(id=detail_id, offer=instance)
+                    detail_obj = OfferDetail.objects.get(
+                        offer=instance,
+                        offer_type=offer_type
+                    )
                 except OfferDetail.DoesNotExist:
-                    raise serializers.ValidationError({"details": f"Detail id={detail_id} does not belong to this offer."})  
+                    raise serializers.ValidationError(
+                        {
+                            "details": (
+                                f"Detail with offer_type='{offer_type}' "
+                                f"does not belong to this offer."
+                            )
+                        }
+                    )
 
                 for attr, value in detail_data.items():
-                    if attr != "id":
-                        setattr(detail_obj, attr, value)
+                    setattr(detail_obj, attr, value)
                 detail_obj.save()
 
         return instance
