@@ -18,7 +18,7 @@ class OfferDetailSerializer(serializers.ModelSerializer):
             "features",
             "offer_type",
         ]
-# : Nur für GET-Listenansicht: Details als {id, url}
+# : Only for GET-List: Details as {id, url}
 class OfferDetailLinkSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()  
 
@@ -28,7 +28,7 @@ class OfferDetailLinkSerializer(serializers.ModelSerializer):
 
     def get_url(self, obj):
         request = self.context.get("request")
-        # : baut "/api/offerdetails/<id>/" (falls du Names hast, können wir reverse nehmen)
+        # "/api/offerdetails/<id>/" 
         return request.build_absolute_uri(f"/api/offerdetails/{obj.id}/") if request else f"/api/offerdetails/{obj.id}/"
 
 
@@ -39,10 +39,10 @@ class UserDetailsSerializer(serializers.ModelSerializer):
         fields = ["first_name", "last_name", "username"]
 
 
-# : READ Serializer (GET): Doku-Format
+# : READ Serializer (GET): 
 class OfferReadSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True)
-    details = OfferDetailLinkSerializer(many=True, read_only=True)  # : Links statt volle Details
+    details = OfferDetailLinkSerializer(many=True, read_only=True)  
     min_price = serializers.SerializerMethodField()  
     min_delivery_time = serializers.SerializerMethodField()  
     user_details = serializers.SerializerMethodField()  
@@ -78,7 +78,7 @@ class OfferReadSerializer(serializers.ModelSerializer):
             "username": obj.user.username,
         }
     
-    # : Doku Serializer für GET /api/offers/{id}/ (OHNE user_details)
+    # Serializer for GET /api/offers/{id}/ (without user_details)
 class OfferRetrieveSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True)
     details = OfferDetailLinkSerializer(many=True, read_only=True)
