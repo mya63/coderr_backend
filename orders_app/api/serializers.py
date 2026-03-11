@@ -39,15 +39,15 @@ class OrderCreateSerializer(serializers.Serializer):
         request = self.context["request"]
         offer_detail = OfferDetail.objects.select_related("offer", "offer__user").get(
             id=validated_data["offer_detail_id"]
-        )
+    )
 
         offer = offer_detail.offer
         business_user = offer.user
         customer_user = request.user
 
+        #  Order title must come from OfferDetail, not Offer
         title = offer.title
 
-        # ✅ normalize / coerce types (prevents DB constraint 500)
         raw_revisions = getattr(offer_detail, "revisions", 0)
         try:
             revisions = int(raw_revisions) if raw_revisions is not None else 0
@@ -65,13 +65,10 @@ class OrderCreateSerializer(serializers.Serializer):
             delivery_time_in_days = 0
 
         raw_price = getattr(offer_detail, "price", 0)
-        # price kann float/decimal/string sein → DecimalField kann das meist,
-        # aber None sollte nie durchrutschen
         price = 0 if raw_price is None else raw_price
 
         features = getattr(offer_detail, "features", []) or []
         offer_type = getattr(offer_detail, "offer_type", "basic") or "basic"
-        title = getattr(offer, "title", "") or ""  # MYA: Snapshot Titel muss vom OfferDetail kommen
 
         try:
             order = Order.objects.create(
@@ -85,12 +82,12 @@ class OrderCreateSerializer(serializers.Serializer):
                 features=features,
                 offer_type=offer_type,
                 status=Order.STATUS_IN_PROGRESS,
-            )
+        )
         except IntegrityError:
             raise serializers.ValidationError({"detail": "Invalid order data."})
 
         return order
-
+    
 class OrderStatusUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
