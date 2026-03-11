@@ -45,7 +45,7 @@ class OrderCreateSerializer(serializers.Serializer):
         business_user = offer.user
         customer_user = request.user
 
-        #  Order title must come from OfferDetail, not Offer
+        #  Order title must come from Offer
         title = offer.title
 
         raw_revisions = getattr(offer_detail, "revisions", 0)
