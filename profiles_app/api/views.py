@@ -8,47 +8,59 @@ from .serializers import ProfileSerializer
 
 
 class ProfileDetailView(generics.RetrieveUpdateAPIView):
-    # Serializer used for retrieving and updating profile data
-    serializer_class = ProfileSerializer
+    """
+    Retrieve or update a specific user profile.
 
-    # User must be authenticated and owner of the profile
+    The authenticated user must be the owner of the profile.
+    """
+
+    serializer_class = ProfileSerializer
     permission_classes = [IsAuthenticated, IsProfileOwner]
 
     def get_object(self):
-        # pk represents the user_id according to API specification
+        """
+        Return the profile associated with the provided user_id.
+        """
         user_id = self.kwargs["pk"]
 
-        # Optimize query by loading related user in same query
         obj = get_object_or_404(
             Profile.objects.select_related("user"),
             user_id=user_id
         )
 
-        # Explicitly check object-level permissions
         self.check_object_permissions(self.request, obj)
-
         return obj
 
 
 class BusinessProfilesListView(generics.ListAPIView):
-    # List all business profiles
+    """
+    List all profiles that belong to business users.
+    """
+
     serializer_class = ProfileSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # Return profiles with role = business
+        """
+        Return profiles with the business role.
+        """
         return Profile.objects.select_related("user").filter(
             role=Profile.ROLE_BUSINESS
         )
 
 
 class CustomerProfilesListView(generics.ListAPIView):
-    # List all customer profiles
+    """
+    List all profiles that belong to customer users.
+    """
+
     serializer_class = ProfileSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # Return profiles with role = customer
+        """
+        Return profiles with the customer role.
+        """
         return Profile.objects.select_related("user").filter(
             role=Profile.ROLE_CUSTOMER
         )

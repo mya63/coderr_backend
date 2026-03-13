@@ -9,22 +9,24 @@ from .serializers import LoginSerializer, RegistrationSerializer
 
 
 class RegistrationView(APIView):
-    # Public endpoint – registration does not require authentication
+    """
+    Register a new user account and return an authentication token.
+    """
+
     permission_classes = [AllowAny]
 
     def post(self, request):
-        # Validate incoming registration data
+        """
+        Validate input data, create a user and profile,
+        and return the authentication token.
+        """
         serializer = RegistrationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # Create user account
         user = serializer.save()
-
-        # Create related profile with requested role ("customer" or "business")
         role = serializer.validated_data["type"]
-        Profile.objects.create(user=user, role=role)
 
-        # Create token for immediate authentication
+        Profile.objects.create(user=user, role=role)
         token, _ = Token.objects.get_or_create(user=user)
 
         return Response(
@@ -39,18 +41,20 @@ class RegistrationView(APIView):
 
 
 class LoginView(APIView):
-    # Public endpoint – login does not require authentication
+    """
+    Authenticate a user and return an authentication token.
+    """
+
     permission_classes = [AllowAny]
 
     def post(self, request):
-        # Validate credentials via serializer
+        """
+        Validate login credentials and return the user's token.
+        """
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # Serializer returns the authenticated user
         user = serializer.validated_data["user"]
-
-        # Reuse existing token or create a new one
         token, _ = Token.objects.get_or_create(user=user)
 
         return Response(
