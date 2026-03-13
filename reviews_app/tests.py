@@ -13,23 +13,23 @@ def api_client():
 
 @pytest.fixture
 def business_user(db):
-    u = User.objects.create_user(username="biz", password="pass12345")
-    Profile.objects.create(user=u, role=Profile.ROLE_BUSINESS)
-    return u
+    user = User.objects.create_user(username="biz", password="pass12345")
+    Profile.objects.create(user=user, role=Profile.ROLE_BUSINESS)
+    return user
 
 
 @pytest.fixture
 def customer_user(db):
-    u = User.objects.create_user(username="cust", password="pass12345")
-    Profile.objects.create(user=u, role=Profile.ROLE_CUSTOMER)
-    return u
+    user = User.objects.create_user(username="cust", password="pass12345")
+    Profile.objects.create(user=user, role=Profile.ROLE_CUSTOMER)
+    return user
 
 
 @pytest.fixture
 def other_customer(db):
-    u = User.objects.create_user(username="cust2", password="pass12345")
-    Profile.objects.create(user=u, role=Profile.ROLE_CUSTOMER)
-    return u
+    user = User.objects.create_user(username="cust2", password="pass12345")
+    Profile.objects.create(user=user, role=Profile.ROLE_CUSTOMER)
+    return user
 
 
 @pytest.mark.django_db
@@ -51,7 +51,11 @@ def test_customer_can_create_review(api_client, customer_user, business_user):
 
     res = api_client.post(
         "/api/reviews/",
-        {"business_user": business_user.id, "rating": 5, "description": "Alles war toll!"},
+        {
+            "business_user": business_user.id,
+            "rating": 5,
+            "description": "Everything was great!",
+        },
         format="json",
     )
 
@@ -69,7 +73,11 @@ def test_business_cannot_create_review(api_client, business_user):
 
     res = api_client.post(
         "/api/reviews/",
-        {"business_user": business_user.id, "rating": 5, "description": "Nope"},
+        {
+            "business_user": business_user.id,
+            "rating": 5,
+            "description": "Nope",
+        },
         format="json",
     )
 
@@ -77,25 +85,52 @@ def test_business_cannot_create_review(api_client, business_user):
 
 
 @pytest.mark.django_db
-def test_only_one_review_per_business_user(api_client, customer_user, business_user):
-    Review.objects.create(business_user=business_user, reviewer=customer_user, rating=4, description="ok")
+def test_only_one_review_per_business_user(
+    api_client,
+    customer_user,
+    business_user,
+):
+    Review.objects.create(
+        business_user=business_user,
+        reviewer=customer_user,
+        rating=4,
+        description="ok",
+    )
 
     api_client.force_authenticate(user=customer_user)
     res = api_client.post(
         "/api/reviews/",
-        {"business_user": business_user.id, "rating": 5, "description": "zweites mal"},
+        {
+            "business_user": business_user.id,
+            "rating": 5,
+            "description": "second attempt",
+        },
         format="json",
     )
 
-    # UniqueConstraint -> DRF liefert i.d.R. 400
     assert res.status_code in (400, 409)
     assert Review.objects.count() == 1
 
 
 @pytest.mark.django_db
-def test_filter_by_business_user_id(api_client, customer_user, business_user, other_customer):
-    Review.objects.create(business_user=business_user, reviewer=customer_user, rating=5, description="a")
-    Review.objects.create(business_user=business_user, reviewer=other_customer, rating=3, description="b")
+def test_filter_by_business_user_id(
+    api_client,
+    customer_user,
+    business_user,
+    other_customer,
+):
+    Review.objects.create(
+        business_user=business_user,
+        reviewer=customer_user,
+        rating=5,
+        description="a",
+    )
+    Review.objects.create(
+        business_user=business_user,
+        reviewer=other_customer,
+        rating=3,
+        description="b",
+    )
 
     api_client.force_authenticate(user=customer_user)
     res = api_client.get(f"/api/reviews/?business_user_id={business_user.id}")
@@ -104,9 +139,24 @@ def test_filter_by_business_user_id(api_client, customer_user, business_user, ot
 
 
 @pytest.mark.django_db
-def test_filter_by_reviewer_id(api_client, customer_user, business_user, other_customer):
-    Review.objects.create(business_user=business_user, reviewer=customer_user, rating=5, description="a")
-    Review.objects.create(business_user=business_user, reviewer=other_customer, rating=3, description="b")
+def test_filter_by_reviewer_id(
+    api_client,
+    customer_user,
+    business_user,
+    other_customer,
+):
+    Review.objects.create(
+        business_user=business_user,
+        reviewer=customer_user,
+        rating=5,
+        description="a",
+    )
+    Review.objects.create(
+        business_user=business_user,
+        reviewer=other_customer,
+        rating=3,
+        description="b",
+    )
 
     api_client.force_authenticate(user=customer_user)
     res = api_client.get(f"/api/reviews/?reviewer_id={customer_user.id}")
@@ -117,8 +167,18 @@ def test_filter_by_reviewer_id(api_client, customer_user, business_user, other_c
 
 @pytest.mark.django_db
 def test_ordering_by_rating(api_client, customer_user, business_user, other_customer):
-    Review.objects.create(business_user=business_user, reviewer=customer_user, rating=2, description="x")
-    Review.objects.create(business_user=business_user, reviewer=other_customer, rating=5, description="y")
+    Review.objects.create(
+        business_user=business_user,
+        reviewer=customer_user,
+        rating=2,
+        description="x",
+    )
+    Review.objects.create(
+        business_user=business_user,
+        reviewer=other_customer,
+        rating=5,
+        description="y",
+    )
 
     api_client.force_authenticate(user=customer_user)
     res = api_client.get("/api/reviews/?ordering=rating")
@@ -128,8 +188,18 @@ def test_ordering_by_rating(api_client, customer_user, business_user, other_cust
 
 
 @pytest.mark.django_db
-def test_only_creator_can_patch(api_client, customer_user, other_customer, business_user):
-    review = Review.objects.create(business_user=business_user, reviewer=customer_user, rating=4, description="ok")
+def test_only_creator_can_patch(
+    api_client,
+    customer_user,
+    other_customer,
+    business_user,
+):
+    review = Review.objects.create(
+        business_user=business_user,
+        reviewer=customer_user,
+        rating=4,
+        description="ok",
+    )
 
     api_client.force_authenticate(user=other_customer)
     res = api_client.patch(f"/api/reviews/{review.id}/", {"rating": 5}, format="json")
@@ -138,12 +208,17 @@ def test_only_creator_can_patch(api_client, customer_user, other_customer, busin
 
 @pytest.mark.django_db
 def test_creator_can_patch(api_client, customer_user, business_user):
-    review = Review.objects.create(business_user=business_user, reviewer=customer_user, rating=4, description="ok")
+    review = Review.objects.create(
+        business_user=business_user,
+        reviewer=customer_user,
+        rating=4,
+        description="ok",
+    )
 
     api_client.force_authenticate(user=customer_user)
     res = api_client.patch(
         f"/api/reviews/{review.id}/",
-        {"rating": 5, "description": "Noch besser als erwartet!"},
+        {"rating": 5, "description": "Even better than expected!"},
         format="json",
     )
     assert res.status_code == 200
@@ -153,7 +228,12 @@ def test_creator_can_patch(api_client, customer_user, business_user):
 
 @pytest.mark.django_db
 def test_creator_can_delete(api_client, customer_user, business_user):
-    review = Review.objects.create(business_user=business_user, reviewer=customer_user, rating=4, description="ok")
+    review = Review.objects.create(
+        business_user=business_user,
+        reviewer=customer_user,
+        rating=4,
+        description="ok",
+    )
 
     api_client.force_authenticate(user=customer_user)
     res = api_client.delete(f"/api/reviews/{review.id}/")

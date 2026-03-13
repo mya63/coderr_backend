@@ -1,8 +1,12 @@
-from django.db import models
 from django.contrib.auth.models import User
+from django.db import models
 
 
 class Offer(models.Model):
+    """
+    Store the main offer data created by a business user.
+    """
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="offers")
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
@@ -11,10 +15,17 @@ class Offer(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
+        """
+        Return the offer title.
+        """
         return self.title
 
 
 class OfferDetail(models.Model):
+    """
+    Store a specific pricing tier and feature set for an offer.
+    """
+
     offer = models.ForeignKey(Offer, on_delete=models.CASCADE, related_name="details")
     title = models.CharField(max_length=255)
     revisions = models.IntegerField(default=0)
@@ -30,4 +41,7 @@ class OfferDetail(models.Model):
     offer_type = models.CharField(max_length=20, choices=OFFER_TYPES)
 
     def __str__(self):
+        """
+        Return a readable label for the offer detail.
+        """
         return f"{self.offer.title} - {self.offer_type}"
