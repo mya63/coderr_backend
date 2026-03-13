@@ -1,11 +1,15 @@
-from django.contrib.auth.models import User   
+from django.contrib.auth.models import User
 from rest_framework import serializers
-from rest_framework.reverse import reverse   
+
 from offers_app.models import Offer, OfferDetail
 
 
 class OfferDetailSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(required=False)  # allow id in PATCH payload
+    """
+    Serialize full offer detail objects for create and update operations.
+    """
+
+    id = serializers.IntegerField(required=False)
 
     class Meta:
         model = OfferDetail
@@ -18,34 +22,49 @@ class OfferDetailSerializer(serializers.ModelSerializer):
             "features",
             "offer_type",
         ]
-# : Only for GET-List: Details as {id, url}
+
+
 class OfferDetailLinkSerializer(serializers.ModelSerializer):
-    url = serializers.SerializerMethodField()  
+    """
+    Serialize offer detail references with id and detail endpoint URL.
+    """
+
+    url = serializers.SerializerMethodField()
 
     class Meta:
         model = OfferDetail
-        fields = ["id", "url"]  
+        fields = ["id", "url"]
 
     def get_url(self, obj):
+        """
+        Return the absolute or relative URL for an offer detail object.
+        """
         request = self.context.get("request")
-        # "/api/offerdetails/<id>/" 
-        return request.build_absolute_uri(f"/api/offerdetails/{obj.id}/") if request else f"/api/offerdetails/{obj.id}/"
+        if request:
+            return request.build_absolute_uri(f"/api/offerdetails/{obj.id}/")
+        return f"/api/offerdetails/{obj.id}/"
 
 
-# : User Details laut Doku
 class UserDetailsSerializer(serializers.ModelSerializer):
+    """
+    Serialize selected public fields of a user.
+    """
+
     class Meta:
         model = User
         fields = ["first_name", "last_name", "username"]
 
 
-# : READ Serializer (GET): 
 class OfferReadSerializer(serializers.ModelSerializer):
+    """
+    Serialize offer data for list responses.
+    """
+
     user = serializers.PrimaryKeyRelatedField(read_only=True)
-    details = OfferDetailLinkSerializer(many=True, read_only=True)  
-    min_price = serializers.SerializerMethodField()  
-    min_delivery_time = serializers.SerializerMethodField()  
-    user_details = serializers.SerializerMethodField()  
+    details = OfferDetailLinkSerializer(many=True, read_only=True)
+    min_price = serializers.SerializerMethodField()
+    min_delivery_time = serializers.SerializerMethodField()
+    user_details = serializers.SerializerMethodField()
 
     class Meta:
         model = Offer
@@ -64,22 +83,40 @@ class OfferReadSerializer(serializers.ModelSerializer):
         ]
 
     def get_min_price(self, obj):
+        """
+        Return the annotated minimum price value.
+        """
         return getattr(obj, "min_price", None)
 
     def get_min_delivery_time(self, obj):
+        """
+        Return the annotated minimum delivery time value.
+        """
         return getattr(obj, "min_delivery_time", None)
 
     def get_user_details(self, obj):
+        """
+        Return selected user details for the offer owner.
+        """
         if not obj.user:
-            return {"first_name": "", "last_name": "", "username": ""}
+            return {
+                "first_name": "",
+                "last_name": "",
+                "username": "",
+            }
+
         return {
             "first_name": obj.user.first_name,
             "last_name": obj.user.last_name,
             "username": obj.user.username,
         }
-    
-    # Serializer for GET /api/offers/{id}/ (without user_details)
+
+
 class OfferRetrieveSerializer(serializers.ModelSerializer):
+    """
+    Serialize offer data for single offer retrieval.
+    """
+
     user = serializers.PrimaryKeyRelatedField(read_only=True)
     details = OfferDetailLinkSerializer(many=True, read_only=True)
     min_price = serializers.SerializerMethodField()
@@ -101,16 +138,25 @@ class OfferRetrieveSerializer(serializers.ModelSerializer):
         ]
 
     def get_min_price(self, obj):
+        """
+        Return the minimum price across all offer details.
+        """
         prices = obj.details.values_list("price", flat=True)
         return min(prices) if prices else None
 
     def get_min_delivery_time(self, obj):
+        """
+        Return the minimum delivery time across all offer details.
+        """
         days = obj.details.values_list("delivery_time_in_days", flat=True)
         return min(days) if days else None
 
 
 class OfferWriteSerializer(serializers.ModelSerializer):
-    # PATCH/POST must accept full details and return full details with ids
+    """
+    Serialize offer data for create and update operations.
+    """
+
     details = OfferDetailSerializer(many=True)
 
     class Meta:
@@ -124,7 +170,9 @@ class OfferWriteSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, attrs):
-        # POST must contain exactly 3 offer details
+        """
+        Ensure that POST requests contain exactly three offer details.
+        """
         request = self.context.get("request")
 
         if request and request.method == "POST":
@@ -137,13 +185,15 @@ class OfferWriteSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        # Create offer with nested details
+        """
+        Create an offer with nested offer details.
+        """
         details_data = validated_data.pop("details", [])
         request = self.context.get("request")
 
         offer = Offer.objects.create(
             user=request.user,
-            **validated_data
+            **validated_data,
         )
 
         for detail_data in details_data:
@@ -152,7 +202,9 @@ class OfferWriteSerializer(serializers.ModelSerializer):
         return offer
 
     def update(self, instance, validated_data):
-        # PATCH updates details by offer_type, not by detail id
+        """
+        Update an offer and its nested details by offer_type.
+        """
         details_data = validated_data.pop("details", None)
 
         for attr, value in validated_data.items():
@@ -171,7 +223,7 @@ class OfferWriteSerializer(serializers.ModelSerializer):
                 try:
                     detail_obj = OfferDetail.objects.get(
                         offer=instance,
-                        offer_type=offer_type
+                        offer_type=offer_type,
                     )
                 except OfferDetail.DoesNotExist:
                     raise serializers.ValidationError(
