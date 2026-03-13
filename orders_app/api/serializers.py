@@ -1,10 +1,8 @@
+from django.db import IntegrityError
 from rest_framework import serializers
 
-from orders_app.models import Order
 from offers_app.models import OfferDetail
-from django.db import IntegrityError
-
-from orders_app.tests import offer_detail
+from orders_app.models import Order
 
 
 
@@ -47,8 +45,9 @@ class OrderCreateSerializer(serializers.Serializer):
         business_user = offer.user
         customer_user = request.user
 
-        #  Order title must come from Offer
-        title = offer.title or ""
+        # Order title must come from OfferDetail
+        title = offer_detail.title or ""
+
 
         raw_revisions = getattr(offer_detail, "revisions", 0)
         try:

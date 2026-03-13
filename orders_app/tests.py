@@ -35,6 +35,7 @@ def offer_detail(db, business_user):
     )
     detail = OfferDetail.objects.create(
         offer=offer,
+        title="Logo Design",
         offer_type="basic",
         revisions=3,
         delivery_time_in_days=5,
@@ -59,8 +60,12 @@ def test_customer_can_create_order(api_client, customer_user, offer_detail):
     assert res.data["customer_user"] == customer_user.id
     assert res.data["business_user"] == offer_detail.offer.user.id
     assert res.data["status"] == "in_progress"
-    assert res.data["title"] == offer_detail.offer.title
-
+    assert res.data["title"] == offer_detail.title
+    assert res.data["revisions"] == offer_detail.revisions
+    assert res.data["delivery_time_in_days"] == offer_detail.delivery_time_in_days
+    assert float(res.data["price"]) == float(offer_detail.price)
+    assert res.data["features"] == offer_detail.features
+    assert res.data["offer_type"] == offer_detail.offer_type
 
 @pytest.mark.django_db
 def test_business_cannot_create_order(api_client, business_user, offer_detail):
