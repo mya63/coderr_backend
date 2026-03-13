@@ -5,8 +5,11 @@ from offers_app.models import OfferDetail
 from orders_app.models import Order
 
 
-
 class OrderSerializer(serializers.ModelSerializer):
+    """
+    Serialize full order data for read operations.
+    """
+
     customer_user = serializers.PrimaryKeyRelatedField(read_only=True)
     business_user = serializers.PrimaryKeyRelatedField(read_only=True)
 
@@ -27,27 +30,37 @@ class OrderSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+
 class OrderCreateSerializer(serializers.Serializer):
+    """
+    Validate input data and create a new order
+    from an existing offer detail.
+    """
+
     offer_detail_id = serializers.IntegerField(write_only=True)
 
     def validate_offer_detail_id(self, value: int) -> int:
+        """
+        Ensure that the referenced offer detail exists.
+        """
         if not OfferDetail.objects.filter(id=value).exists():
             raise serializers.ValidationError("OfferDetail not found.")
         return value
 
     def create(self, validated_data):
+        """
+        Create a new order using data copied from the selected offer detail.
+        """
         request = self.context["request"]
-        offer_detail = OfferDetail.objects.select_related("offer", "offer__user").get(
-            id=validated_data["offer_detail_id"]
-    )
+        offer_detail = OfferDetail.objects.select_related(
+            "offer",
+            "offer__user",
+        ).get(id=validated_data["offer_detail_id"])
 
         offer = offer_detail.offer
         business_user = offer.user
         customer_user = request.user
-
-        # Order title must come from OfferDetail
         title = offer_detail.title or ""
-
 
         raw_revisions = getattr(offer_detail, "revisions", 0)
         try:
@@ -59,7 +72,9 @@ class OrderCreateSerializer(serializers.Serializer):
 
         raw_delivery = getattr(offer_detail, "delivery_time_in_days", 0)
         try:
-            delivery_time_in_days = int(raw_delivery) if raw_delivery is not None else 0
+            delivery_time_in_days = (
+                int(raw_delivery) if raw_delivery is not None else 0
+            )
         except (TypeError, ValueError):
             delivery_time_in_days = 0
         if delivery_time_in_days < 0:
@@ -83,19 +98,33 @@ class OrderCreateSerializer(serializers.Serializer):
                 features=features,
                 offer_type=offer_type,
                 status=Order.STATUS_IN_PROGRESS,
-        )
+            )
         except IntegrityError:
-            raise serializers.ValidationError({"detail": "Invalid order data."})
+            raise serializers.ValidationError(
+                {"detail": "Invalid order data."}
+            )
 
         return order
-    
+
+
 class OrderStatusUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serialize and validate order status updates.
+    """
+
     class Meta:
         model = Order
         fields = ["status"]
 
     def validate_status(self, value: str) -> str:
-        allowed = {Order.STATUS_IN_PROGRESS, Order.STATUS_COMPLETED, Order.STATUS_CANCELLED}
+        """
+        Ensure that the provided status is allowed.
+        """
+        allowed = {
+            Order.STATUS_IN_PROGRESS,
+            Order.STATUS_COMPLETED,
+            Order.STATUS_CANCELLED,
+        }
         if value not in allowed:
             raise serializers.ValidationError("Invalid status.")
         return value

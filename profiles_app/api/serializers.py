@@ -1,20 +1,17 @@
 from rest_framework import serializers
+
 from profiles_app.models import Profile
 
 
 class ProfileSerializer(serializers.ModelSerializer):
-    # user soll als ID rauskommen
+    """
+    Serialize profile data and expose selected related user fields.
+    """
+
     user = serializers.IntegerField(source="user.id", read_only=True)
-
     username = serializers.CharField(source="user.username", read_only=True)
-
-    # MYA: email muss PATCH-bar sein (kommt aus user.email)
     email = serializers.EmailField(source="user.email", required=False)
-
-    # Doku erwartet "type" → wir mappen intern role -> type
     type = serializers.CharField(source="role", read_only=True)
-
-    # Doku erwartet "file" als String (URL oder "")
     file = serializers.SerializerMethodField()
 
     class Meta:
@@ -33,16 +30,20 @@ class ProfileSerializer(serializers.ModelSerializer):
             "email",
             "created_at",
         ]
-        # MYA: email darf NICHT read_only sein, sonst kann PATCH es nicht ändern
         read_only_fields = ["user", "username", "type", "file", "created_at"]
 
     def get_file(self, obj):
+        """
+        Return the file URL or an empty string if no file exists.
+        """
         if obj.file and hasattr(obj.file, "url"):
             return obj.file.url
         return ""
 
-    # MYA: PATCH muss user.email aktualisieren (email liegt am User, nicht am Profile)
     def update(self, instance, validated_data):
+        """
+        Update profile data and synchronize the related user email.
+        """
         user_data = validated_data.pop("user", {})
 
         if "email" in user_data:
