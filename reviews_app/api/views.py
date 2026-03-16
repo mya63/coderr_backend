@@ -1,6 +1,7 @@
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 
+from reviews_app.api.filters import get_filtered_reviews 
 from reviews_app.api.permissions import (
     IsAuthenticatedCustomerForCreate,
     IsReviewerOwner,
@@ -21,34 +22,7 @@ class ReviewListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated, IsAuthenticatedCustomerForCreate]
 
     def get_queryset(self):
-        """
-        Return reviews filtered and ordered by query parameters.
-        """
-        queryset = Review.objects.all()
-
-        business_user_id = self.request.query_params.get("business_user_id")
-        reviewer_id = self.request.query_params.get("reviewer_id")
-
-        if business_user_id:
-            queryset = queryset.filter(business_user_id=business_user_id)
-        if reviewer_id:
-            queryset = queryset.filter(reviewer_id=reviewer_id)
-
-        ordering = self.request.query_params.get("ordering")
-        if ordering == "rating":
-            queryset = queryset.order_by("-rating", "-updated_at")
-        elif ordering == "updated_at":
-            queryset = queryset.order_by("-updated_at")
-
-        return queryset
-
-    def get_serializer_context(self):
-        """
-        Return serializer context including the current request.
-        """
-        context = super().get_serializer_context()
-        context["request"] = self.request
-        return context
+        return get_filtered_reviews(self.request)
 
 
 class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -61,11 +35,3 @@ class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     permission_classes = [IsAuthenticated, IsReviewerOwner]
-
-    def get_serializer_context(self):
-        """
-        Return serializer context including the current request.
-        """
-        context = super().get_serializer_context()
-        context["request"] = self.request
-        return context
