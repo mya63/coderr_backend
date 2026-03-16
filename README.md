@@ -74,7 +74,7 @@ Example request
 
 # 🧪 Running Tests
 
-Run tests locally:
+Run tests locally
 
 ```
 pytest
@@ -116,19 +116,36 @@ Mac / Linux
 source venv/bin/activate
 ```
 
-Install dependencies
+---
+
+# 🔧 Environment Variables
+
+Create a `.env` file based on `.env.example`
+
+```
+SECRET_KEY=your-secret-key
+DEBUG=1
+```
+
+---
+
+# 📦 Install Dependencies
 
 ```
 pip install -r requirements.txt
 ```
 
-Run migrations
+---
+
+# 🗄 Run Migrations
 
 ```
 python manage.py migrate
 ```
 
-Start development server
+---
+
+# 🚀 Start Development Server
 
 ```
 python manage.py runserver
@@ -138,17 +155,6 @@ Local API base
 
 ```
 http://127.0.0.1:8000/api/
-```
-
----
-
-# 🔧 Environment Variables
-
-Create a `.env` file based on `.env.example`:
-
-```
-SECRET_KEY=your-secret-key
-DEBUG=1
 ```
 
 ---
@@ -170,4 +176,6 @@ DEBUG=1
 Muhammed Yunus Amini
 
 ```
-```
+
+---
+
