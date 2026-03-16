@@ -1,11 +1,10 @@
 from rest_framework import status
-from rest_framework.authtoken.models import Token
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from profiles_app.models import Profile
 from .serializers import LoginSerializer, RegistrationSerializer
+from .services import register_user_with_profile, login_user_and_get_token
 
 
 class RegistrationView(APIView):
@@ -16,18 +15,13 @@ class RegistrationView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        """
-        Validate input data, create a user and profile,
-        and return the authentication token.
-        """
         serializer = RegistrationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         user = serializer.save()
         role = serializer.validated_data["type"]
 
-        Profile.objects.create(user=user, role=role)
-        token, _ = Token.objects.get_or_create(user=user)
+        token = register_user_with_profile(user, role)
 
         return Response(
             {
@@ -48,14 +42,11 @@ class LoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        """
-        Validate login credentials and return the user's token.
-        """
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         user = serializer.validated_data["user"]
-        token, _ = Token.objects.get_or_create(user=user)
+        token = login_user_and_get_token(user)
 
         return Response(
             {
