@@ -49,7 +49,9 @@ class OrderCreateSerializer(serializers.Serializer):
         return value
 
     def create(self, validated_data):
-        
+        """
+        Create a new order using extracted business logic.
+        """
         request = self.context["request"]
 
         try:
