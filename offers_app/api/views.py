@@ -1,10 +1,13 @@
-from django.db.models import Min
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, generics, permissions
 from rest_framework.pagination import PageNumberPagination
 
-from offers_app.models import Offer, OfferDetail
-from .filters import OfferFilter
+from offers_app.models import OfferDetail
+from .filters import (
+    OfferFilter,
+    get_annotated_offers,
+    get_ordered_annotated_offers,
+)
 from .permissions import IsBusinessUser, IsOwner
 from .serializers import (
     OfferDetailSerializer,
@@ -66,20 +69,7 @@ class OfferListCreateView(generics.ListCreateAPIView):
         Return all offers annotated with minimum price
         and minimum delivery time.
         """
-        return (
-            Offer.objects.all()
-            .annotate(
-                min_price=Min("details__price"),
-                min_delivery_time=Min("details__delivery_time_in_days"),
-            )
-            .order_by("-updated_at")
-        )
-
-    def get_serializer_context(self):
-        """
-        Return serializer context including the current request.
-        """
-        return {"request": self.request}
+        return get_ordered_annotated_offers()
 
 
 class OfferDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -90,10 +80,8 @@ class OfferDetailView(generics.RetrieveUpdateDestroyAPIView):
     PATCH and DELETE requests are restricted to the owner.
     """
 
-    queryset = Offer.objects.all().annotate(
-        min_price=Min("details__price"),
-        min_delivery_time=Min("details__delivery_time_in_days"),
-    )
+    def get_queryset(self):
+        return get_annotated_offers()
 
     def get_permissions(self):
         """
@@ -111,12 +99,6 @@ class OfferDetailView(generics.RetrieveUpdateDestroyAPIView):
             return OfferRetrieveSerializer
         return OfferWriteSerializer
 
-    def get_serializer_context(self):
-        """
-        Return serializer context including the current request.
-        """
-        return {"request": self.request}
-
 
 class OfferDetailSingleView(generics.RetrieveAPIView):
     """
@@ -126,9 +108,3 @@ class OfferDetailSingleView(generics.RetrieveAPIView):
     queryset = OfferDetail.objects.all()
     serializer_class = OfferDetailSerializer
     permission_classes = [permissions.IsAuthenticated]
-
-    def get_serializer_context(self):
-        """
-        Return serializer context including the current request.
-        """
-        return {"request": self.request}

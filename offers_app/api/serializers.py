@@ -138,18 +138,10 @@ class OfferRetrieveSerializer(serializers.ModelSerializer):
         ]
 
     def get_min_price(self, obj):
-        """
-        Return the minimum price across all offer details.
-        """
-        prices = obj.details.values_list("price", flat=True)
-        return min(prices) if prices else None
+        return getattr(obj, "min_price", None)
 
     def get_min_delivery_time(self, obj):
-        """
-        Return the minimum delivery time across all offer details.
-        """
-        days = obj.details.values_list("delivery_time_in_days", flat=True)
-        return min(days) if days else None
+        return getattr(obj, "min_delivery_time", None)
 
 
 class OfferWriteSerializer(serializers.ModelSerializer):

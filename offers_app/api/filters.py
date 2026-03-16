@@ -1,6 +1,20 @@
+from django.db.models import Min
 from django_filters import rest_framework as df
 
 from offers_app.models import Offer
+
+
+def get_annotated_offers():
+    """ Return offers with annotated min price and min delivery time."""
+    return Offer.objects.all().annotate(
+        min_price=Min("details__price"),
+        min_delivery_time=Min("details__delivery_time_in_days"),
+    )
+
+
+def get_ordered_annotated_offers():
+    """ Return annotated offers ordered by latest update."""
+    return get_annotated_offers().order_by("-updated_at")
 
 
 class OfferFilter(df.FilterSet):
