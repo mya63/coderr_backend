@@ -7,6 +7,8 @@ from orders_app.api.filters import (
     business_user_exists,
     get_in_progress_order_count,
     get_completed_order_count,
+    get_user_orders,
+
 )
 from orders_app.api.permissions import IsBusinessUser, IsCustomerUser
 from orders_app.api.serializers import (
@@ -30,10 +32,7 @@ class OrderListCreateView(generics.ListCreateAPIView):
         Return all orders where the current user is either
         the customer or the business user.
         """
-        user = self.request.user
-        return Order.objects.filter(
-            Q(customer_user=user) | Q(business_user=user)
-        ).distinct()
+        return get_user_orders(self.request.user)
 
     def get_serializer_class(self):
         """

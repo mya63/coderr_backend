@@ -1,6 +1,12 @@
 from django.contrib.auth.models import User
+from django.db.models import Q
 
 from orders_app.models import Order
+
+def get_user_orders(user):
+    return Order.objects.filter(
+        Q(customer_user=user) | Q(business_user=user)
+    ).distinct()
 
 
 def business_user_exists(business_user_id):
