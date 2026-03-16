@@ -1,9 +1,13 @@
-from django.contrib.auth.models import User
 from django.db.models import Q
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from orders_app.api.filters import (
+    business_user_exists,
+    get_in_progress_order_count,
+    get_completed_order_count,
+)
 from orders_app.api.permissions import IsBusinessUser, IsCustomerUser
 from orders_app.api.serializers import (
     OrderCreateSerializer,
@@ -129,16 +133,13 @@ class OrderCountView(generics.GenericAPIView):
         """
         Return the count of active orders for the given business user.
         """
-        if not User.objects.filter(id=business_user_id).exists():
+        if not business_user_exists(business_user_id):
             return Response(
                 {"detail": "Business user not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        order_count = Order.objects.filter(
-            business_user_id=business_user_id,
-            status=Order.STATUS_IN_PROGRESS,
-        ).count()
+        order_count = get_in_progress_order_count(business_user_id)
 
         return Response(
             {"order_count": order_count},
@@ -157,16 +158,13 @@ class CompletedOrderCountView(generics.GenericAPIView):
         """
         Return the count of completed orders for the given business user.
         """
-        if not User.objects.filter(id=business_user_id).exists():
+        if not business_user_exists(business_user_id):
             return Response(
                 {"detail": "Business user not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        completed_order_count = Order.objects.filter(
-            business_user_id=business_user_id,
-            status=Order.STATUS_COMPLETED,
-        ).count()
+        completed_order_count = get_completed_order_count(business_user_id)
 
         return Response(
             {"completed_order_count": completed_order_count},
