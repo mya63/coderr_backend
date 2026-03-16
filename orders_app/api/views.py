@@ -1,4 +1,3 @@
-from django.db.models import Q
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -8,7 +7,6 @@ from orders_app.api.filters import (
     get_in_progress_order_count,
     get_completed_order_count,
     get_user_orders,
-
 )
 from orders_app.api.permissions import IsBusinessUser, IsCustomerUser
 from orders_app.api.serializers import (

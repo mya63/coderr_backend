@@ -2,6 +2,7 @@ from django.db import IntegrityError
 from rest_framework import serializers
 
 from offers_app.models import OfferDetail
+from orders_app.api.filters import create_order_from_offer_detail
 from orders_app.models import Order
 
 
@@ -48,63 +49,18 @@ class OrderCreateSerializer(serializers.Serializer):
         return value
 
     def create(self, validated_data):
-        """
-        Create a new order using data copied from the selected offer detail.
-        """
+        
         request = self.context["request"]
-        offer_detail = OfferDetail.objects.select_related(
-            "offer",
-            "offer__user",
-        ).get(id=validated_data["offer_detail_id"])
-
-        offer = offer_detail.offer
-        business_user = offer.user
-        customer_user = request.user
-        title = offer_detail.title or ""
-
-        raw_revisions = getattr(offer_detail, "revisions", 0)
-        try:
-            revisions = int(raw_revisions) if raw_revisions is not None else 0
-        except (TypeError, ValueError):
-            revisions = 0
-        if revisions < 0:
-            revisions = 0
-
-        raw_delivery = getattr(offer_detail, "delivery_time_in_days", 0)
-        try:
-            delivery_time_in_days = (
-                int(raw_delivery) if raw_delivery is not None else 0
-            )
-        except (TypeError, ValueError):
-            delivery_time_in_days = 0
-        if delivery_time_in_days < 0:
-            delivery_time_in_days = 0
-
-        raw_price = getattr(offer_detail, "price", 0)
-        price = 0 if raw_price is None else raw_price
-
-        features = getattr(offer_detail, "features", []) or []
-        offer_type = getattr(offer_detail, "offer_type", "basic") or "basic"
 
         try:
-            order = Order.objects.create(
-                customer_user=customer_user,
-                business_user=business_user,
-                offer_detail=offer_detail,
-                title=title,
-                revisions=revisions,
-                delivery_time_in_days=delivery_time_in_days,
-                price=price,
-                features=features,
-                offer_type=offer_type,
-                status=Order.STATUS_IN_PROGRESS,
+            return create_order_from_offer_detail(
+                validated_data["offer_detail_id"],
+                request.user,
             )
         except IntegrityError:
             raise serializers.ValidationError(
                 {"detail": "Invalid order data."}
             )
-
-        return order
 
 
 class OrderStatusUpdateSerializer(serializers.ModelSerializer):
