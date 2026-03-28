@@ -4,8 +4,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .serializers import LoginSerializer, RegistrationSerializer
-from .services import register_user_with_profile, login_user_and_get_token
-
+from .services import (
+    register_user_with_profile,
+    login_user_and_get_token,
+    ensure_demo_users,
+)
 
 class RegistrationView(APIView):
     """
@@ -42,6 +45,10 @@ class LoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+
+
+        ensure_demo_users()
+
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
