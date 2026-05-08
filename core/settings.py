@@ -117,7 +117,9 @@ REST_FRAMEWORK = {
     ],
 }
 
+# MYA START - frontend origins
 CORS_ALLOWED_ORIGINS = [
+    "https://mya63.github.io",
     "http://127.0.0.1:5500",
     "http://localhost:5500",
 ]
@@ -125,9 +127,9 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGINS = [
+    "https://mya63.github.io",
     "http://127.0.0.1:5500",
     "http://localhost:5500",
 ]
-
 if RENDER_EXTERNAL_HOSTNAME:
     CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")

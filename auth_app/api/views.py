@@ -8,48 +8,13 @@ from rest_framework.views import APIView
 from profiles_app.models import Profile
 
 from .serializers import LoginSerializer, RegistrationSerializer
-from .services import register_user_with_profile, login_user_and_get_token
+from .services import (
+    register_user_with_profile,
+    login_user_and_get_token,
+    ensure_demo_users,
+)
 
 User = get_user_model()
-
-
-DEMO_USERS = [
-    {
-        "old_username": "kevin",
-        "username": "DemoBusiness",
-        "password": "asdasd24",
-        "role": Profile.ROLE_BUSINESS,
-    },
-    {
-        "old_username": "andrey",
-        "username": "DemoCustomer",
-        "password": "asdasd12",
-        "role": Profile.ROLE_CUSTOMER,
-    },
-]
-
-
-def ensure_demo_users():
-    """
-    Ensure demo guest users always exist with the correct names and passwords.
-    """
-
-    for demo in DEMO_USERS:
-        user = User.objects.filter(username=demo["username"]).first()
-
-        if not user:
-            user = User.objects.filter(username=demo["old_username"]).first()
-
-        if not user:
-            user = User.objects.create_user(username=demo["username"])
-
-        user.username = demo["username"]
-        user.set_password(demo["password"])
-        user.save()
-
-        profile, _ = Profile.objects.get_or_create(user=user)
-        profile.role = demo["role"]
-        profile.save()
 
 
 class RegistrationView(APIView):

@@ -1,3 +1,12 @@
+## 🚀 Live Test
+
+Test the application directly in the browser:
+
+👉 https://mya63.github.io/coderr_frontend/
+
+Guest login is available – no registration required.
+
+
 # Coderr Backend API
 
 Django REST Framework backend for a marketplace platform.  
