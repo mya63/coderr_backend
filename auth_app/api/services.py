@@ -8,42 +8,39 @@ User = get_user_model()
 # MYA START - demo users for guest login
 DEMO_USERS = [
     {
-        "username": "kevin",
-        "email": "kevin@example.com",
+        "username": "DemoBusiness",
+        "email": "demo-business@example.com",
         "password": "asdasd24",
-        "role": "business",
+        "role": Profile.ROLE_BUSINESS,
     },
     {
-        "username": "andrey",
-        "email": "andrey@example.com",
-        "password": "asdasd24",
-        "role": "customer",
+        "username": "DemoCustomer",
+        "email": "demo-customer@example.com",
+        "password": "asdasd12",
+        "role": Profile.ROLE_CUSTOMER,
     },
 ]
 
 
 def ensure_demo_users():
     """
-    Create fixed demo users for guest login if they do not exist yet.
+    Create or update fixed demo users for guest login.
     """
     for demo_user in DEMO_USERS:
-        user, created = User.objects.get_or_create(
+        user, _ = User.objects.get_or_create(
             username=demo_user["username"],
             defaults={"email": demo_user["email"]},
         )
 
-        if created:
-            user.set_password(demo_user["password"])
-            user.save()
+        user.email = demo_user["email"]
+        user.set_password(demo_user["password"])
+        user.save()
 
-        Profile.objects.get_or_create(
-            user=user,
-            defaults={"role": demo_user["role"]},
-        )
+        profile, _ = Profile.objects.get_or_create(user=user)
+        profile.role = demo_user["role"]
+        profile.save()
 
         Token.objects.get_or_create(user=user)
-# MYA END
-
 
 def register_user_with_profile(user, role):
     """
